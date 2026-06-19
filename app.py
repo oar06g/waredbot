@@ -3,8 +3,10 @@ bot/bot.py — بوت تيليجرام
 python-telegram-bot v20
 تشغيل: python bot.py
 """
-import os, asyncio
+import os
+import threading
 from dotenv import load_dotenv
+from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import Application, CommandHandler, ContextTypes
 
@@ -15,6 +17,10 @@ WEBAPP_URL   = os.environ.get('WEBAPP_URL',   'https://waredwebsite2.vercel.app/
 ADMIN_ID     = int(os.environ.get('ADMIN_ID', '8988236075'))
 CHANNEL_URL  = os.environ.get('CHANNEL_URL',  'https://t.me/medo_channel')
 SUPPORT_URL  = os.environ.get('SUPPORT_URL',  'https://t.me/medo_add')
+FLASK_HOST   = os.environ.get('FLASK_HOST', '0.0.0.0')
+FLASK_PORT   = int(os.environ.get('FLASK_PORT', '5002'))
+
+flask_app = Flask(__name__)
 
 async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -64,13 +70,36 @@ async def admin_cmd(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🛡️ *لوحة الأدمن*", parse_mode='Markdown',
                                     reply_markup=InlineKeyboardMarkup(kb))
 
-def main():
-    app = Application.builder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help",  help_cmd))
-    app.add_handler(CommandHandler("admin", admin_cmd))
+
+@flask_app.route('/')
+def index():
+    return '<h1>Flask server is running</h1><p>Welcome to Reward Ads bot server.</p>'
+
+
+def run_flask():
+    print(f"🌐 Flask running on http://{FLASK_HOST}:{FLASK_PORT}")
+    flask_app.run(host=FLASK_HOST, port=FLASK_PORT)
+
+
+def run_bot():
+    bot_app = Application.builder().token(BOT_TOKEN).build()
+    bot_app.add_handler(CommandHandler("start", start))
+    bot_app.add_handler(CommandHandler("help",  help_cmd))
+    bot_app.add_handler(CommandHandler("admin", admin_cmd))
     print("🤖 Bot running...")
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    bot_app.run_polling(allowed_updates=Update.ALL_TYPES)
+
+
+def main():
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+
+    flask_thread.start()
+    bot_thread.start()
+
+    flask_thread.join()
+    bot_thread.join()
+
 
 if __name__ == '__main__':
     main()
