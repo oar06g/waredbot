@@ -21,6 +21,7 @@ FLASK_HOST   = os.environ.get('FLASK_HOST', '0.0.0.0')
 FLASK_PORT   = int(os.environ.get('FLASK_PORT', '5002'))
 
 flask_app = Flask(__name__)
+app = flask_app
 
 async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
